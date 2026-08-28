@@ -1,12 +1,10 @@
 import os
 import logging
-import requests
+import random
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
-import random
-import json
 
 # Load environment variables
 load_dotenv()
@@ -264,14 +262,29 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
     await query.answer()
     
+    # Create a fake update object for the command handlers
+    class FakeUpdate:
+        def __init__(self, message):
+            self.message = message
+            self.effective_user = None
+            self.effective_message = message
+            self.callback_query = None
+    
+    fake_msg = type('obj', (object,), {
+        'reply_text': query.message.reply_text,
+        'chat_id': query.message.chat_id
+    })()
+    
+    fake_update = FakeUpdate(fake_msg)
+    
     if query.data == 'news':
-        await news(update, context)
+        await news(fake_update, context)
     elif query.data == 'code':
-        await code_help(update, context)
+        await code_help(fake_update, context)
     elif query.data == 'tools':
-        await tools(update, context)
+        await tools(fake_update, context)
     elif query.data == 'trends':
-        await trends(update, context)
+        await trends(fake_update, context)
 
 # Handle regular messages (non-command)
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -314,7 +327,7 @@ def main() -> None:
         logger.error("No token provided! Please set TELEGRAM_BOT_TOKEN in .env")
         return
     
-    # Create Application
+    # Create Application with newer approach
     application = Application.builder().token(TOKEN).build()
 
     # Command handlers
@@ -336,7 +349,7 @@ def main() -> None:
     # Error handler
     application.add_error_handler(error_handler)
 
-    # Start the bot
+    # Start the bot with webhook or polling
     logger.info("Bot started!")
     application.run_polling()
 
