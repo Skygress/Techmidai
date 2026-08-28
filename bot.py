@@ -2,8 +2,7 @@ import os
 import logging
 import random
 from datetime import datetime
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+from telethon import TelegramClient, events, Button
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -17,7 +16,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Bot token from environment
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+API_ID = os.getenv('API_ID')
+API_HASH = os.getenv('API_HASH')
+BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 # Tech and AI related responses
 TECH_FACTS = [
@@ -53,9 +54,13 @@ PROGRAMMING_TIPS = [
     "💻 Practice coding daily, even for 30 minutes."
 ]
 
+# Create the client
+bot = TelegramClient('bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
+
 # Start command
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
+@bot.on(events.NewMessage(pattern='/start'))
+async def start(event):
+    user = await event.get_sender()
     welcome_message = f"""
 👋 Hello {user.first_name}! Welcome to **TechMind AI**!
 
@@ -70,22 +75,18 @@ Use /help to see all available commands!
 ⚠️ **Disclaimer**: This bot provides general tech information and does not give financial, legal, or medical advice.
     """
     
-    keyboard = [
-        [InlineKeyboardButton("📰 Tech News", callback_data='news')],
-        [InlineKeyboardButton("💻 Code Help", callback_data='code')],
-        [InlineKeyboardButton("🛠️ AI Tools", callback_data='tools')],
-        [InlineKeyboardButton("📈 Tech Trends", callback_data='trends')]
+    buttons = [
+        [Button.inline("📰 Tech News", b"news")],
+        [Button.inline("💻 Code Help", b"code")],
+        [Button.inline("🛠️ AI Tools", b"tools")],
+        [Button.inline("📈 Tech Trends", b"trends")]
     ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await update.message.reply_text(
-        welcome_message,
-        reply_markup=reply_markup,
-        parse_mode='Markdown'
-    )
+    await event.respond(welcome_message, buttons=buttons)
 
 # Help command
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+@bot.on(events.NewMessage(pattern='/help'))
+async def help_command(event):
     help_text = """
 📚 **Available Commands:**
 
@@ -95,6 +96,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 /code - Get programming tips
 /tools - Discover AI & tech tools
 /trends - Current tech trends
+/about - About this bot
 /feedback - Send feedback about the bot
 
 💡 **Quick Tips:**
@@ -104,10 +106,11 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 **Privacy Policy:** We don't store any user data. All interactions are anonymous.
     """
-    await update.message.reply_text(help_text, parse_mode='Markdown')
+    await event.respond(help_text)
 
-# News command (simulated)
-async def news(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+# News command
+@bot.on(events.NewMessage(pattern='/news'))
+async def news(event):
     news_items = [
         "🚀 **AI Breakthrough**: New language model achieves human-level reasoning",
         "📱 **Tech Update**: Smartphone sales surge with AI-powered features",
@@ -130,10 +133,11 @@ async def news(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 ⚠️ **Note**: News is simulated for demonstration purposes.
     """
-    await update.message.reply_text(message, parse_mode='Markdown')
+    await event.respond(message)
 
 # Code help command
-async def code_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+@bot.on(events.NewMessage(pattern='/code'))
+async def code_help(event):
     tip = random.choice(PROGRAMMING_TIPS)
     
     message = f"""
@@ -149,10 +153,11 @@ async def code_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 💡 Need specific help? Use /feedback to ask questions!
     """
-    await update.message.reply_text(message, parse_mode='Markdown')
+    await event.respond(message)
 
 # Tools command
-async def tools(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+@bot.on(events.NewMessage(pattern='/tools'))
+async def tools(event):
     tools_list = "\n".join(AI_TOOLS)
     
     message = f"""
@@ -173,10 +178,11 @@ async def tools(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 ⚠️ **Note**: These tools are for educational purposes.
     """
-    await update.message.reply_text(message, parse_mode='Markdown')
+    await event.respond(message)
 
 # Trends command
-async def trends(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+@bot.on(events.NewMessage(pattern='/trends'))
+async def trends(event):
     trends_list = """
 📈 **Current Tech Trends (2026)**
 
@@ -210,10 +216,11 @@ async def trends(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 ⚠️ **Disclaimer**: Trends are for informational purposes only.
     """
-    await update.message.reply_text(message, parse_mode='Markdown')
+    await event.respond(message)
 
 # Feedback command
-async def feedback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+@bot.on(events.NewMessage(pattern='/feedback'))
+async def feedback(event):
     message = """
 📝 **Feedback**
 
@@ -227,10 +234,11 @@ Your feedback helps improve this bot. No personal data is stored.
 
 👍 **Rate the bot**: Send us a message with your rating (1-5 stars) and thoughts!
     """
-    await update.message.reply_text(message, parse_mode='Markdown')
+    await event.respond(message)
 
 # About command
-async def about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+@bot.on(events.NewMessage(pattern='/about'))
+async def about(event):
     message = """
 🤖 **About TechMind AI**
 
@@ -254,44 +262,99 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 📧 **Contact**: Use /feedback for any queries
     """
-    await update.message.reply_text(message, parse_mode='Markdown')
+    await event.respond(message)
 
 # Handle button callbacks
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    await query.answer()
+@bot.on(events.CallbackQuery)
+async def button_callback(event):
+    data = event.data.decode()
     
-    # Create a simple reply function
-    async def reply_text(text, parse_mode=None):
-        await query.message.reply_text(text, parse_mode=parse_mode)
+    if data == 'news':
+        news_items = [
+            "🚀 **AI Breakthrough**: New language model achieves human-level reasoning",
+            "📱 **Tech Update**: Smartphone sales surge with AI-powered features",
+            "🔬 **Research**: Quantum computing reaches new milestone",
+            "💡 **Innovation**: Scientists develop self-healing electronic materials",
+            "🤖 **AI Ethics**: New framework for responsible AI development released",
+            "🌍 **Sustainability**: Tech giants commit to carbon neutrality by 2030"
+        ]
+        selected_news = random.choice(news_items)
+        message = f"""
+📰 **Tech & AI News Update**
+
+{selected_news}
+
+📅 {datetime.now().strftime('%B %d, %Y')}
+
+🔄 Use /news to get another update!
+        """
+        await event.answer()
+        await event.edit(message)
     
-    class FakeMessage:
-        def __init__(self):
-            self.chat_id = query.message.chat_id
-        async def reply_text(self, text, parse_mode=None):
-            await query.message.reply_text(text, parse_mode=parse_mode)
+    elif data == 'code':
+        tip = random.choice(PROGRAMMING_TIPS)
+        message = f"""
+💻 **Programming Help**
+
+{tip}
+
+🛠️ **Popular Tech Stacks:**
+• **Frontend**: React, Vue, Angular
+• **Backend**: Python, Node.js, Java
+• **AI/ML**: TensorFlow, PyTorch, scikit-learn
+• **Mobile**: React Native, Flutter, Swift
+        """
+        await event.answer()
+        await event.edit(message)
     
-    class FakeUpdate:
-        def __init__(self):
-            self.message = FakeMessage()
-            self.effective_user = None
-            self.effective_message = query.message
-            self.callback_query = query
+    elif data == 'tools':
+        tools_list = "\n".join(AI_TOOLS)
+        message = f"""
+🛠️ **Essential AI & Tech Tools**
+
+{tools_list}
+
+🔧 **Development Tools:**
+• VS Code - Popular code editor
+• Docker - Containerization
+• GitHub - Version control
+• Postman - API testing
+        """
+        await event.answer()
+        await event.edit(message)
     
-    fake_update = FakeUpdate()
-    
-    if query.data == 'news':
-        await news(fake_update, context)
-    elif query.data == 'code':
-        await code_help(fake_update, context)
-    elif query.data == 'tools':
-        await tools(fake_update, context)
-    elif query.data == 'trends':
-        await trends(fake_update, context)
+    elif data == 'trends':
+        message = """
+📈 **Current Tech Trends (2026)**
+
+🤖 **AI & ML:**
+• Large Language Models (LLMs)
+• Generative AI in creative fields
+• AI-powered automation
+• Ethical AI development
+
+💻 **Development:**
+• Web3 technologies
+• Serverless computing
+• Edge AI
+• Progressive Web Apps
+
+🔐 **Cybersecurity:**
+• Zero-trust architecture
+• AI in threat detection
+• Quantum-safe encryption
+        """
+        await event.answer()
+        await event.edit(message)
 
 # Handle regular messages
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_message = update.message.text.lower()
+@bot.on(events.NewMessage)
+async def handle_message(event):
+    # Ignore commands
+    if event.message.text and event.message.text.startswith('/'):
+        return
+    
+    user_message = event.message.text.lower() if event.message.text else ""
     
     if 'hello' in user_message or 'hi' in user_message:
         response = "👋 Hello! I'm TechMind AI. Use /help to see what I can do!"
@@ -308,52 +371,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 ⚠️ **Note**: I'm an educational bot and don't provide commercial services, financial advice, or engage in spam."""
     
-    await update.message.reply_text(response, parse_mode='Markdown')
+    await event.respond(response)
 
-# Error handler
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.error(f"Update {update} caused error {context.error}")
-    
-    try:
-        if update and update.effective_message:
-            await update.effective_message.reply_text(
-                "⚠️ Oops! Something went wrong. Please try again later."
-            )
-    except:
-        pass
-
-# Main function
-def main() -> None:
-    """Start the bot."""
-    if not TOKEN:
-        logger.error("No token provided! Please set TELEGRAM_BOT_TOKEN in .env")
-        return
-    
-    # Create Application
-    application = Application.builder().token(TOKEN).build()
-
-    # Command handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("news", news))
-    application.add_handler(CommandHandler("code", code_help))
-    application.add_handler(CommandHandler("tools", tools))
-    application.add_handler(CommandHandler("trends", trends))
-    application.add_handler(CommandHandler("feedback", feedback))
-    application.add_handler(CommandHandler("about", about))
-    
-    # Callback handler for buttons
-    application.add_handler(CallbackQueryHandler(button_callback))
-    
-    # Message handler for non-command messages
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
-    # Error handler
-    application.add_error_handler(error_handler)
-
-    # Start the bot with polling (NO WEBHOOK NEEDED!)
-    logger.info("Bot started with polling mode!")
-    application.run_polling()
+# Start the bot
+def main():
+    logger.info("TechMind AI Bot started successfully!")
+    logger.info("Bot is running with Telethon!")
+    bot.run_until_disconnected()
 
 if __name__ == '__main__':
-    main()
+    if not all([API_ID, API_HASH, BOT_TOKEN]):
+        logger.error("Missing environment variables! Please set API_ID, API_HASH, and TELEGRAM_BOT_TOKEN")
+    else:
+        main()
