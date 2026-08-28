@@ -117,7 +117,6 @@ async def news(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "🌍 **Sustainability**: Tech giants commit to carbon neutrality by 2030"
     ]
     
-    # Select random news
     selected_news = random.choice(news_items)
     
     message = f"""
@@ -262,20 +261,24 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
     await query.answer()
     
-    # Create a fake update object for the command handlers
+    # Create a simple reply function
+    async def reply_text(text, parse_mode=None):
+        await query.message.reply_text(text, parse_mode=parse_mode)
+    
+    class FakeMessage:
+        def __init__(self):
+            self.chat_id = query.message.chat_id
+        async def reply_text(self, text, parse_mode=None):
+            await query.message.reply_text(text, parse_mode=parse_mode)
+    
     class FakeUpdate:
-        def __init__(self, message):
-            self.message = message
+        def __init__(self):
+            self.message = FakeMessage()
             self.effective_user = None
-            self.effective_message = message
-            self.callback_query = None
+            self.effective_message = query.message
+            self.callback_query = query
     
-    fake_msg = type('obj', (object,), {
-        'reply_text': query.message.reply_text,
-        'chat_id': query.message.chat_id
-    })()
-    
-    fake_update = FakeUpdate(fake_msg)
+    fake_update = FakeUpdate()
     
     if query.data == 'news':
         await news(fake_update, context)
@@ -286,11 +289,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     elif query.data == 'trends':
         await trends(fake_update, context)
 
-# Handle regular messages (non-command)
+# Handle regular messages
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_message = update.message.text.lower()
     
-    # Simple keyword-based responses (educational, not for ads)
     if 'hello' in user_message or 'hi' in user_message:
         response = "👋 Hello! I'm TechMind AI. Use /help to see what I can do!"
     elif 'thanks' in user_message or 'thank' in user_message:
@@ -327,7 +329,7 @@ def main() -> None:
         logger.error("No token provided! Please set TELEGRAM_BOT_TOKEN in .env")
         return
     
-    # Create Application with newer approach
+    # Create Application
     application = Application.builder().token(TOKEN).build()
 
     # Command handlers
@@ -349,8 +351,8 @@ def main() -> None:
     # Error handler
     application.add_error_handler(error_handler)
 
-    # Start the bot with webhook or polling
-    logger.info("Bot started!")
+    # Start the bot with polling (NO WEBHOOK NEEDED!)
+    logger.info("Bot started with polling mode!")
     application.run_polling()
 
 if __name__ == '__main__':
