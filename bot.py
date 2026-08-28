@@ -3,7 +3,7 @@ import logging
 import random
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -54,7 +54,7 @@ PROGRAMMING_TIPS = [
 ]
 
 # Start command
-def start(update: Update, context: CallbackContext) -> None:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     welcome_message = f"""
 👋 Hello {user.first_name}! Welcome to **TechMind AI**!
@@ -78,14 +78,14 @@ Use /help to see all available commands!
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    update.message.reply_text(
+    await update.message.reply_text(
         welcome_message,
         reply_markup=reply_markup,
         parse_mode='Markdown'
     )
 
 # Help command
-def help_command(update: Update, context: CallbackContext) -> None:
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     help_text = """
 📚 **Available Commands:**
 
@@ -105,10 +105,10 @@ def help_command(update: Update, context: CallbackContext) -> None:
 
 **Privacy Policy:** We don't store any user data. All interactions are anonymous.
     """
-    update.message.reply_text(help_text, parse_mode='Markdown')
+    await update.message.reply_text(help_text, parse_mode='Markdown')
 
 # News command
-def news(update: Update, context: CallbackContext) -> None:
+async def news(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     news_items = [
         "🚀 **AI Breakthrough**: New language model achieves human-level reasoning",
         "📱 **Tech Update**: Smartphone sales surge with AI-powered features",
@@ -131,10 +131,10 @@ def news(update: Update, context: CallbackContext) -> None:
 
 ⚠️ **Note**: News is simulated for demonstration purposes.
     """
-    update.message.reply_text(message, parse_mode='Markdown')
+    await update.message.reply_text(message, parse_mode='Markdown')
 
 # Code help command
-def code_help(update: Update, context: CallbackContext) -> None:
+async def code_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     tip = random.choice(PROGRAMMING_TIPS)
     
     message = f"""
@@ -150,10 +150,10 @@ def code_help(update: Update, context: CallbackContext) -> None:
 
 💡 Need specific help? Use /feedback to ask questions!
     """
-    update.message.reply_text(message, parse_mode='Markdown')
+    await update.message.reply_text(message, parse_mode='Markdown')
 
 # Tools command
-def tools(update: Update, context: CallbackContext) -> None:
+async def tools(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     tools_list = "\n".join(AI_TOOLS)
     
     message = f"""
@@ -174,10 +174,10 @@ def tools(update: Update, context: CallbackContext) -> None:
 
 ⚠️ **Note**: These tools are for educational purposes.
     """
-    update.message.reply_text(message, parse_mode='Markdown')
+    await update.message.reply_text(message, parse_mode='Markdown')
 
 # Trends command
-def trends(update: Update, context: CallbackContext) -> None:
+async def trends(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     trends_list = """
 📈 **Current Tech Trends (2026)**
 
@@ -211,10 +211,10 @@ def trends(update: Update, context: CallbackContext) -> None:
 
 ⚠️ **Disclaimer**: Trends are for informational purposes only.
     """
-    update.message.reply_text(message, parse_mode='Markdown')
+    await update.message.reply_text(message, parse_mode='Markdown')
 
 # Feedback command
-def feedback(update: Update, context: CallbackContext) -> None:
+async def feedback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 📝 **Feedback**
 
@@ -228,10 +228,10 @@ Your feedback helps improve this bot. No personal data is stored.
 
 👍 **Rate the bot**: Send us a message with your rating (1-5 stars) and thoughts!
     """
-    update.message.reply_text(message, parse_mode='Markdown')
+    await update.message.reply_text(message, parse_mode='Markdown')
 
 # About command
-def about(update: Update, context: CallbackContext) -> None:
+async def about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🤖 **About TechMind AI**
 
@@ -255,12 +255,12 @@ def about(update: Update, context: CallbackContext) -> None:
 
 📧 **Contact**: Use /feedback for any queries
     """
-    update.message.reply_text(message, parse_mode='Markdown')
+    await update.message.reply_text(message, parse_mode='Markdown')
 
 # Handle button callbacks
-def button_callback(update: Update, context: CallbackContext) -> None:
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    query.answer()
+    await query.answer()
     
     if query.data == 'news':
         news_items = [
@@ -281,7 +281,7 @@ def button_callback(update: Update, context: CallbackContext) -> None:
 
 🔄 Use /news to get another update!
         """
-        query.edit_message_text(message, parse_mode='Markdown')
+        await query.edit_message_text(message, parse_mode='Markdown')
     
     elif query.data == 'code':
         tip = random.choice(PROGRAMMING_TIPS)
@@ -296,7 +296,7 @@ def button_callback(update: Update, context: CallbackContext) -> None:
 • **AI/ML**: TensorFlow, PyTorch, scikit-learn
 • **Mobile**: React Native, Flutter, Swift
         """
-        query.edit_message_text(message, parse_mode='Markdown')
+        await query.edit_message_text(message, parse_mode='Markdown')
     
     elif query.data == 'tools':
         tools_list = "\n".join(AI_TOOLS)
@@ -311,7 +311,7 @@ def button_callback(update: Update, context: CallbackContext) -> None:
 • GitHub - Version control
 • Postman - API testing
         """
-        query.edit_message_text(message, parse_mode='Markdown')
+        await query.edit_message_text(message, parse_mode='Markdown')
     
     elif query.data == 'trends':
         message = """
@@ -333,16 +333,11 @@ def button_callback(update: Update, context: CallbackContext) -> None:
 • Zero-trust architecture
 • AI in threat detection
 • Quantum-safe encryption
-
-🌍 **Green Tech:**
-• Sustainable computing
-• Energy-efficient AI
-• Carbon-neutral data centers
         """
-        query.edit_message_text(message, parse_mode='Markdown')
+        await query.edit_message_text(message, parse_mode='Markdown')
 
 # Handle regular messages
-def handle_message(update: Update, context: CallbackContext) -> None:
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message or not update.message.text:
         return
     
@@ -363,10 +358,10 @@ def handle_message(update: Update, context: CallbackContext) -> None:
 
 ⚠️ **Note**: I'm an educational bot and don't provide commercial services, financial advice, or engage in spam."""
     
-    update.message.reply_text(response, parse_mode='Markdown')
+    await update.message.reply_text(response, parse_mode='Markdown')
 
 # Error handler
-def error_handler(update: Update, context: CallbackContext) -> None:
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.error(f"Update {update} caused error {context.error}")
 
 # Main function
@@ -376,33 +371,31 @@ def main() -> None:
         logger.error("No token provided! Please set TELEGRAM_BOT_TOKEN in .env")
         return
     
-    # Create Updater with older compatible version
-    updater = Updater(TOKEN)
-    dp = updater.dispatcher
+    # Create Application
+    application = Application.builder().token(TOKEN).build()
 
     # Command handlers
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help_command))
-    dp.add_handler(CommandHandler("news", news))
-    dp.add_handler(CommandHandler("code", code_help))
-    dp.add_handler(CommandHandler("tools", tools))
-    dp.add_handler(CommandHandler("trends", trends))
-    dp.add_handler(CommandHandler("feedback", feedback))
-    dp.add_handler(CommandHandler("about", about))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("news", news))
+    application.add_handler(CommandHandler("code", code_help))
+    application.add_handler(CommandHandler("tools", tools))
+    application.add_handler(CommandHandler("trends", trends))
+    application.add_handler(CommandHandler("feedback", feedback))
+    application.add_handler(CommandHandler("about", about))
     
     # Callback handler for buttons
-    dp.add_handler(CallbackQueryHandler(button_callback))
+    application.add_handler(CallbackQueryHandler(button_callback))
     
     # Message handler for non-command messages
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     # Error handler
-    dp.add_error_handler(error_handler)
+    application.add_error_handler(error_handler)
 
     # Start the bot
     logger.info("TechMind AI Bot started successfully!")
-    updater.start_polling()
-    updater.idle()
+    application.run_polling()
 
 if __name__ == '__main__':
     main()
